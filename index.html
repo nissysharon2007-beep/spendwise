@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Spendwise – Expense Tracker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#eef2f7;--card:#fff;--ink:#14213d;--muted:#65728a;--line:#dde3ec;--blue:#2f5bea;--green:#12805c;--red:#c93a3a;--r:14px}
+@media(prefers-color-scheme:dark){:root{--bg:#0e1424;--card:#171f35;--ink:#e8edf8;--muted:#8d9ab4;--line:#27314d;--blue:#6f90ff;--green:#3fc79a;--red:#ff7a7a}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:Manrope,system-ui,-apple-system,Segoe UI,sans-serif;line-height:1.5}
+.wrap{max-width:1000px;margin:0 auto;padding:24px 16px 60px}
+h1{font-size:1.6rem;font-weight:800;margin:0}
+header p{margin:2px 0 20px;color:var(--muted)}
+.balance{background:var(--ink);color:#fff;border-radius:var(--r);padding:28px;display:flex;flex-wrap:wrap;gap:24px;justify-content:space-between;align-items:flex-end}
+@media(prefers-color-scheme:dark){.balance{background:#243056}}
+.balance .big{font-size:clamp(2rem,6vw,3.2rem);font-weight:800;line-height:1.1}
+.balance small{opacity:.7;display:block}
+.bal-sub{display:flex;gap:28px;font-weight:600}
+.grid{display:grid;grid-template-columns:320px 1fr;gap:16px;margin-top:16px}
+@media(max-width:800px){.grid{grid-template-columns:1fr}}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:20px}
+h2{font-size:1.05rem;margin:0 0 14px}
+label{display:block;font-size:.85rem;font-weight:600;margin:10px 0 4px}
+input,select,button{font:inherit;color:inherit}
+input,select{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--bg)}
+input:focus,select:focus,button:focus-visible{outline:2px solid var(--blue);outline-offset:1px}
+.seg{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.seg input{position:absolute;opacity:0}
+.seg span{display:block;text-align:center;padding:9px;border:1px solid var(--line);border-radius:10px;cursor:pointer;font-weight:600}
+.seg input:checked+span{background:var(--blue);color:#fff;border-color:var(--blue)}
+.seg input:focus-visible+span{outline:2px solid var(--blue);outline-offset:1px}
+.btn{width:100%;margin-top:16px;padding:12px;border:0;border-radius:10px;background:var(--blue);color:#fff;font-weight:800;cursor:pointer}
+.btn.ghost{background:transparent;color:var(--ink);border:1px solid var(--line);width:auto;margin:0;padding:8px 14px;font-weight:600}
+.err{color:var(--red);font-size:.85rem;min-height:1.2em;margin:8px 0 0}
+.filters{display:grid;grid-template-columns:2fr 1fr 1fr auto;gap:8px;margin-bottom:14px}
+@media(max-width:600px){.filters{grid-template-columns:1fr 1fr}}
+ul{list-style:none;margin:0;padding:0}
+li.tx{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--line)}
+li.tx:last-child{border:0}
+.dot{width:10px;height:10px;border-radius:50%;flex:none}
+.tx .t{flex:1;min-width:0}
+.tx .t b{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tx .t small{color:var(--muted)}
+.amt{font-weight:800;white-space:nowrap}
+.amt.in{color:var(--green)}.amt.out{color:var(--red)}
+.del{background:none;border:0;color:var(--muted);cursor:pointer;font-size:1.2rem;padding:4px 8px;border-radius:8px}
+.del:hover{color:var(--red)}
+.empty{text-align:center;color:var(--muted);padding:28px 8px}
+.bars .row{margin:10px 0}
+.bars .top{display:flex;justify-content:space-between;font-size:.88rem;font-weight:600}
+.bars .track{height:10px;background:var(--bg);border-radius:6px;overflow:hidden;margin-top:4px}
+.bars .fill{height:100%;border-radius:6px;transition:width .35s}
+@media(prefers-reduced-motion:reduce){.bars .fill{transition:none}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Spendwise</h1>
+    <p>Track what comes in and what goes out. Data stays in your browser.</p>
+  </header>
+
+  <section class="balance" aria-live="polite">
+    <div><small>Current balance</small><div class="big" id="bal">₹0</div></div>
+    <div class="bal-sub">
+      <div><small>Income</small><span id="inc">₹0</span></div>
+      <div><small>Expenses</small><span id="exp">₹0</span></div>
+    </div>
+  </section>
+
+  <div class="grid">
+    <div>
+      <form class="card" id="form" novalidate>
+        <h2>Add transaction</h2>
+        <div class="seg" role="radiogroup" aria-label="Type">
+          <label style="margin:0"><input type="radio" name="type" value="expense" checked><span>Expense</span></label>
+          <label style="margin:0"><input type="radio" name="type" value="income"><span>Income</span></label>
+        </div>
+        <label for="title">Description</label>
+        <input id="title" maxlength="60" placeholder="e.g. Groceries">
+        <label for="amount">Amount (₹)</label>
+        <input id="amount" type="number" min="0" step="0.01" inputmode="decimal" placeholder="0.00">
+        <label for="cat">Category</label>
+        <select id="cat"></select>
+        <label for="date">Date</label>
+        <input id="date" type="date">
+        <p class="err" id="err" role="alert"></p>
+        <button class="btn" type="submit">Add transaction</button>
+      </form>
+
+      <div class="card bars" style="margin-top:16px">
+        <h2>Spending by category</h2>
+        <div id="bars"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Transactions</h2>
+      <div class="filters">
+        <input id="q" type="search" placeholder="Search description" aria-label="Search">
+        <select id="fcat" aria-label="Filter by category"></select>
+        <input id="fmonth" type="month" aria-label="Filter by month">
+        <button class="btn ghost" id="csv" type="button">Export CSV</button>
+      </div>
+      <ul id="list"></ul>
+    </div>
+  </div>
+</div>
+
+<script>
+const CATS = {
+  Food:'#e8833a', Transport:'#2f9bd6', Shopping:'#a45de0', Bills:'#d6a62f',
+  Health:'#3bb27a', Entertainment:'#e0568a', Salary:'#12805c', Other:'#7d8aa3'
+};
+const KEY = 'spendwise.v1';
+const $ = id => document.getElementById(id);
+const fmt = n => '₹' + n.toLocaleString('en-IN', {maximumFractionDigits:2});
+const today = () => new Date().toISOString().slice(0,10);
+
+let items = load();
+
+function load(){
+  try { return JSON.parse(localStorage.getItem(KEY)) || []; }
+  catch(e){ return []; }
+}
+function save(){
+  try { localStorage.setItem(KEY, JSON.stringify(items)); } catch(e){}
+}
+
+// ---- setup ----
+$('cat').innerHTML = Object.keys(CATS).map(c => `<option>${c}</option>`).join('');
+$('fcat').innerHTML = '<option value="">All categories</option>' +
+  Object.keys(CATS).map(c => `<option>${c}</option>`).join('');
+$('date').value = today();
+
+// ---- add ----
+$('form').addEventListener('submit', e => {
+  e.preventDefault();
+  const title = $('title').value.trim();
+  const amount = parseFloat($('amount').value);
+  if (!title) return fail('Enter a description.');
+  if (!(amount > 0)) return fail('Enter an amount greater than 0.');
+  if (!$('date').value) return fail('Pick a date.');
+  fail('');
+  items.unshift({
+    id: Date.now(),
+    title, amount,
+    type: document.querySelector('input[name=type]:checked').value,
+    cat: $('cat').value,
+    date: $('date').value
+  });
+  save();
+  $('title').value = ''; $('amount').value = '';
+  render();
+});
+const fail = m => { $('err').textContent = m; };
+
+// ---- delete (event delegation) ----
+$('list').addEventListener('click', e => {
+  const b = e.target.closest('.del');
+  if (!b) return;
+  items = items.filter(x => x.id !== +b.dataset.id);
+  save(); render();
+});
+
+['q','fcat','fmonth'].forEach(id => $(id).addEventListener('input', render));
+
+// ---- helpers ----
+function filtered(){
+  const q = $('q').value.toLowerCase(), c = $('fcat').value, m = $('fmonth').value;
+  return items
+    .filter(x => (!q || x.title.toLowerCase().includes(q)) &&
+                 (!c || x.cat === c) && (!m || x.date.startsWith(m)))
+    .sort((a,b) => b.date.localeCompare(a.date) || b.id - a.id);
+}
+const esc = s => s.replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+
+// ---- render ----
+function render(){
+  const list = filtered();
+  const inc = list.filter(x => x.type==='income').reduce((s,x)=>s+x.amount,0);
+  const exp = list.filter(x => x.type==='expense').reduce((s,x)=>s+x.amount,0);
+  $('bal').textContent = fmt(inc-exp);
+  $('inc').textContent = fmt(inc);
+  $('exp').textContent = fmt(exp);
+
+  $('list').innerHTML = list.length ? list.map(x => `
+    <li class="tx">
+      <span class="dot" style="background:${CATS[x.cat]}"></span>
+      <div class="t"><b>${esc(x.title)}</b><small>${x.cat} · ${x.date}</small></div>
+      <span class="amt ${x.type==='income'?'in':'out'}">${x.type==='income'?'+':'−'}${fmt(x.amount)}</span>
+      <button class="del" data-id="${x.id}" aria-label="Delete ${esc(x.title)}">×</button>
+    </li>`).join('')
+    : '<li class="empty">No transactions yet. Add your first one using the form.</li>';
+
+  // category bars (expenses only)
+  const by = {};
+  list.filter(x => x.type==='expense').forEach(x => by[x.cat] = (by[x.cat]||0) + x.amount);
+  const rows = Object.entries(by).sort((a,b) => b[1]-a[1]);
+  $('bars').innerHTML = rows.length ? rows.map(([c,v]) => `
+    <div class="row">
+      <div class="top"><span>${c}</span><span>${fmt(v)}</span></div>
+      <div class="track"><div class="fill" style="width:${(v/exp*100).toFixed(1)}%;background:${CATS[c]}"></div></div>
+    </div>`).join('')
+    : '<p class="empty" style="padding:8px">Expenses will show up here.</p>';
+}
+
+// ---- CSV export ----
+$('csv').addEventListener('click', () => {
+  const rows = [['Date','Description','Type','Category','Amount']]
+    .concat(filtered().map(x => [x.date, '"'+x.title.replace(/"/g,'""')+'"', x.type, x.cat, x.amount]));
+  const blob = new Blob([rows.map(r => r.join(',')).join('\n')], {type:'text/csv'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob); a.download = 'spendwise.csv'; a.click();
+  URL.revokeObjectURL(a.href);
+});
+
+render();
+</script>
+</body>
+</html>
